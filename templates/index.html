@@ -1,0 +1,37 @@
+<!DOCTYPE html> <!-- HTML5の宣言。ブラウザにHTML5であることを伝える -->
+<html lang="en"> <!-- ページの言語を英語に設定 -->
+<head>
+    <meta charset="UTF-8"> <!-- 文字コードをUTF-8に設定。日本語も正しく表示される -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- レスポンシブ対応。スマホでも見やすくする -->
+    <title>レシピ検索</title> <!-- ブラウザのタブに表示されるタイトル -->
+</head>
+<body>
+    <h1>レシピ検索</h1> <!-- レシピ検索の見出し -->
+    <form action="/search" method="post"> <!-- レシピ名で検索するフォーム。/searchにPOST送信 -->
+        <input type="text" name="query" placeholder="レシピを検索"> <!-- 検索キーワード入力欄 -->
+        <button type="submit">検索</button> <!-- 検索ボタン -->
+    </form>
+    <h1>材料検索</h1> <!-- 材料検索の見出し -->
+    <form action="/search_by_ingredients" method="POST"> <!-- 材料名で検索するフォーム。/search_by_ingredientsにPOST送信 -->
+        <input type="text" name="query" placeholder="材料を検索"> <!-- 材料キーワード入力欄 -->
+        <button type="submit">検索</button> <!-- 検索ボタン -->
+    </form>
+    <div class="recipe-list"> <!-- レシピ一覧表示用のコンテナ -->
+        {% if recipes %} <!-- Python側からrecipesが渡されている場合（検索結果あり） -->
+            {% for recipe in recipes %} <!-- recipesを1件ずつループして表示 -->
+                <div class="recipe-item"> <!-- レシピ1件分の表示枠 -->
+                    <h3>
+                        <a href="{{ url_for('show_recipe', recipe_id=recipe.id) }}"> <!-- 詳細ページへのリンク。recipe.idをURLに渡す -->
+                            {{ recipe.title }} <!-- レシピタイトル表示 -->
+                        </a>
+                    </h3>
+                    <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}"> <!-- レシピ画像表示。altは画像が表示できない場合の代替テキスト -->
+                    <p>{{ recipe.description }}</p> <!-- レシピ説明文表示 -->
+                </div>
+            {% endfor %} <!-- ループ終了 -->
+        {% elif no_results %} <!-- 検索結果がなかった場合 -->
+            <p>該当するレシピが見つかりませんでした。</p> <!-- 見つからなかった旨を表示 -->
+        {% endif %} <!-- if文終了 -->
+    </div>
+</body>
+</html>
