@@ -15,5 +15,11 @@
             <li>{{ ingredient }}</li>
         {% endfor %}
     </ul>
+    <h2>作り方:</h2>
+    <ul>
+        {% for step in recipe.steps %}
+            <li>{{step}}</li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
