@@ -134,18 +134,27 @@ def add_recipe():
     return redirect('/')  # ホーム画面にリダイレクト
 
 if __name__ == "__main__":
-    with app.app_context():
+    with app.app_context():  # アプリケーションコンテキストを作成
         db.create_all()  # データベースのテーブルを作成
-        if not Recipe.query.first():
-            dummy = Recipe(
-                title="ダミーレシピ",
-                description="説明",
-                image_url="#",
-                ingredients=["卵", "牛乳"],
-                steps=["混ぜる", "焼く"],
-                time_min=10
-            )
-            db.session.add(dummy)
-            db.session.commit()
+        if Recipe.query.first() is None:
+           recipe_file = 'data/recipes.json'
+           if os.path.exists(recipe_file):  # JSONファイルが存在する場合
+               with open(recipe_file, 'r', encoding='utf-8') as f:
+                   recipes = json.load(f)  # JSONファイルからレシピデータを読み込み
+                   for recipe_data in recipes:
+                       data = Recipe(
+                            id=recipe_data['id'],
+                            title=recipe_data['title'],
+                            description=recipe_data['description'],
+                            image_url=recipe_data.get('image_url', None),
+                            ingredients=recipe_data['ingredients'],
+                            steps=recipe_data['steps'],
+                            time_min=recipe_data.get('time_min', None)
+                       )
+                       db.session.add(data)
+                   db.session.commit()
+        recipes_count = Recipe.query.count()
+        print(f"データベースに保存されたレシピの数: {recipes_count}")
+
     app.run(debug=True)
 
