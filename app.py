@@ -7,7 +7,7 @@ import os  # OS操作を行うための標準ライブラリ
 import re  # 正規表現を扱うための標準ライブラリ
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)  # Flaskアプリケーションのインスタンスを作成
-app.secret_key = 'recipe_secret_key'  # セッション管理やフラッシュメッセージ表示に必要な秘密鍵を設定
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')  # セッション管理やフラッシュメッセージ表示に必要な秘密鍵を設定
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASEDIR, 'recipes.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -165,5 +165,5 @@ def add_recipe():
 if __name__ == "__main__":
     with app.app_context():  # アプリケーションコンテキストを作成
         db.create_all()  # データベースのテーブルを作成
-    app.run(debug=True)
+    app.run(debug=False)
 
