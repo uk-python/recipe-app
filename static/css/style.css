@@ -1,0 +1,177 @@
+:root {
+  --aqua: #25d0e8;       /* ターコイズブルー */
+  --lavender: #a48bff;   /* パープル */
+  --neon: #ff2e90;       /* ピンクアクセント */
+  --ink: #111319;        /* 文字用ダーク */
+}
+
+body {
+  color: var(--ink);   
+  background: linear-gradient(135deg, var(--aqua), var(--lavender)); 
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+}
+
+.site-header{
+   padding: 20px;
+   text-align: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;   
+  justify-content: center; 
+  gap: 10px;
+}
+
+.brand-text {
+  display: block;
+  text-align: left;   
+  line-height: 1.0;   
+  font-size: 5rem;
+  font-weight: 800;
+  color: var(--neon);
+  
+}
+
+
+.afro-logo {
+  width: 140px;
+  height: auto;
+  margin-right: 10px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;   /* 縦並びにする */
+  gap: 12px;                /* 入力欄とボタンの間隔 */
+  margin: 20px auto;        /* 上下に余白＋中央寄せ */
+  max-width: 400px;         /* 横幅を制限してバランス調整 */
+  background: rgba(255,255,255,0.1);
+  padding: 16px;            /* 内側の余白 */
+  border-radius: 12px;      /* 角を丸く */
+  backdrop-filter: blur(10px); 
+  justify-content: center;
+}
+
+input[type="text"], select {
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 2px solid var(--lavender);
+  border-radius: 8px;
+  background-color: rgba(0,0,0,0.6); 
+  color: #ffffff;                    
+  outline: none;
+}
+
+
+button {
+  padding: 10px 18px;
+  font-size: 16px;
+  font-weight: bold; 
+  border: none;
+  border-radius: 8px;
+  background-color: var(--neon);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: var(--lavender);
+}
+
+.recipe-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); 
+  gap: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+
+.recipe-item {
+  background-color: rgba(255,255,255,0.1); 
+  border: 2px solid var(--lavender);       
+  border-radius: 12px;                     
+  padding: 15px;                           
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+  transition: transform 0.2s ease, box-shadow 0.2s ease;           
+  transition: transform 0.2s, box-shadow 0.2s;       
+}
+
+.recipe-item img {
+  width: 100%;       
+  height: 180px;      
+  object-fit: cover; 
+  border-radius: 8px;
+  margin-bottom: 10px;
+  width: 100%;              /* カード幅いっぱい */
+  height: 180px;            /* 高さを統一 */
+  object-fit: cover;        /* はみ出しをトリミングして収める */
+  border-radius: 8px;       /* 角を少し丸める */
+  margin-bottom: 10px; 
+}
+
+.recipe-item h3 a {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 10px 0;
+  color: #ffffff;       
+  text-decoration: none;
+}
+
+.recipe-item p {
+  font-size: 0.9rem;
+  margin: 6px 0;
+  line-height: 1.4;
+  color: #ffffff;
+         
+}
+
+.recipe-item p.time {
+  font-size: 0.85rem;
+  color: #ffffff;
+  font-style: italic;
+}
+
+
+.recipe-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.recipe-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 左右2カラム */
+  gap: 30px;
+  width: 70vw;
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 20px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+.recipe-detail .left img {
+  width: 100%;
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.recipe-detail .right ul,
+.recipe-detail .right ol {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 20px;
+}
+
+.recipe-detail .right li {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 6px;
+}

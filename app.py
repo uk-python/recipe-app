@@ -1,7 +1,8 @@
-from flask import Flask  # Flask本体をインポート
+from flask import Flask,jsonify  # Flask本体をインポート
 from flask import render_template,request, redirect,flash # テンプレート描画・リクエスト取得・JSON返却・リダイレクト・フラッシュメッセージ表示
 import json  # JSONファイルを扱うための標準ライブラリ
 from flask_sqlalchemy import SQLAlchemy  # SQLAlchemyをインポート
+from sqlalchemy import or_, and_  # SQLAlchemyのor_関数とand_関数をインポート
 import os  # OS操作を行うための標準ライブラリ
 import re  # 正規表現を扱うための標準ライブラリ
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -37,65 +38,102 @@ print("EXISTS AFTER  :", os.path.exists(db_path))
 
 @app.route('/')  # ルートURL（ホーム）にアクセスしたときの処理
 def home():  # ホーム画面の表示処理
-     return render_template('index.html', recipes=[])  # 初期表示時はレシピ一覧を表示しない（recipes=[]）・index.htmlテンプレートを描画
+    return render_template('index.html', recipes=[])    # index.htmlテンプレートを描画し、 初期表示時はレシピ一覧を表示しない
 
-@app.route('/search', methods=['POST'])  # /searchにPOSTリクエストが来たときの処理
-def search_recipes():  # 検索処理の関数。/searchにPOSTされたときに呼ばれる
+@app.route('/api/search', methods=['POST'])  # /searchにPOSTリクエストが来たときの処理
+def api_search_recipes():  # 検索処理の関数。/searchにPOSTされたときに呼ばれる
     query = request.form.get('query')  # フォームから検索キーワードを取得
+    if not query.strip():  # キーワードが空の場合
+        return jsonify({"status": "error", "message": "キーワードを入力してください"})
     keywords = query.strip().lower().split()  # キーワードを小文字に変換し、前後の空白を削除してリスト化
-    filtered_recipes = []  # 検索結果を格納するリスト
-    for recipe in recipes:  # 全レシピを1件ずつチェック
-        is_all_keywords_recipe = True  # 全キーワードが一致するか判定するフラグ
-        for keyword in keywords:  # 入力されたキーワードを1つずつ確認
-            if keyword not in recipe['title']  and keyword not in recipe['description']:  # タイトルにも説明にも含まれなければ
-                is_all_keywords_recipe = False  # フラグをFalseに
-                break  # 1つでも一致しなければ次のレシピへ
-        if is_all_keywords_recipe == True:  # 全キーワードが一致した場合
-            filtered_recipes.append(recipe)  # 検索結果リストに追加    
-    if not filtered_recipes:  # 検索結果が空の場合
-        return render_template('index.html', recipes=False, no_results=True)  # 「見つかりませんでした」表示
+    filtered_recipes = Recipe.query # 全レシピを取得するクエリ
+    for keyword in keywords:  # 入力されたキーワードを1つずつ確認
+        filtered_recipes = filtered_recipes.filter(or_(
+          (Recipe.title.like(f'%{keyword}%')),
+          (Recipe.description.like(f'%{keyword}%'))
+          )) # タイトルまたは説明にキーワードが含まれるレシピを絞り
+    recipes_to_show = filtered_recipes.all()  # 絞り込んだ結果を取得
+    recipes_dict = []  # レシピ情報を辞書形式で格納するリスト
+    for recipe in recipes_to_show:  # 検索結果のレシピを1つずつ処理
+        recipes_dict.append({
+            'id': recipe.id,
+            'title': recipe.title, 
+            'description': recipe.description,
+            'image_url': recipe.image_url,
+            'ingredients': recipe.ingredients,
+            'steps': recipe.steps,
+            'time_min': recipe.time_min
 
-    return render_template('index.html', recipes=filtered_recipes)  # 検索結果をテンプレートに渡して表示
+        })
+    if not recipes_to_show:  # 検索結果が空の場合
+        return jsonify({"status": "error", "message": "検索結果が見つかりませんでした"})  # 「見つかりませんでした」表示
+    return jsonify({"status": "success", "data": recipes_dict, "count": len(recipes_dict)})  # 検索結果をJSON形式で返す
 
-@app.route('/search_by_ingredients',methods=['POST'])  # /search_by_ingredientsにPOSTリクエストが来たときの処理
-def search_by_ingredients():  # 材料検索の関数。/search_by_ingredientsにPOSTされたときに呼ばれる
+@app.route('/api/search_by_ingredients',methods=['POST'])  # /search_by_ingredientsにPOSTリクエストが来たときの処理
+def api_search_by_ingredients():  # 材料検索の関数。/search_by_ingredientsにPOSTされたときに呼ばれる
+    search_type = request.form.get('search_type')  # フォームから検索タイプを取得
     query = request.form.get('query')  # フォームから検索キーワード（材料名）を取得
+    if not query.strip():  # キーワードが空の場合
+        return jsonify({"status": "error", "message": "キーワードを入力してください"})  #
     ingredients = query.strip().lower().split()  # 材料キーワードを小文字に変換し、前後の空白を削除してリスト化
-    filtered_ingredients = []  # 検索結果を格納するリスト
-    for recipe in recipes:  # 全レシピを1件ずつチェック
-        is_all_ingredients_recipe = True  # 全材料キーワードが一致するか判定するフラグ
-        for ingredient in ingredients:  # 入力された材料キーワードを1つずつ確認
-            is_keyword_found = False  # 材料がレシピに含まれているか判定するフラグ
-            for item in recipe['ingredients']:  # レシピの材料リストを1つずつ確認
-                item = item.lower().strip()  # 材料名を小文字に変換し、前後の空白を削除
-                if ingredient in item:  # 材料キーワードが含まれていれば
-                    is_keyword_found = True
+    all_recipes = Recipe.query.all()  # 全レシピを取得
+    recipes_to_show = [] # 検索結果を格納するリスト
+    for recipe in all_recipes: # 全レシピを1つずつ確認
+        recipe_ingredients = [i.lower()for i in recipe.ingredients] # レシピの材料を小文字に変換してリスト化
+        if search_type == 'and':  # AND検索の場合
+            all_ingredients_found = True # 全ての材料が見つかったかどうかのフラグ
+            for ingredient in ingredients: # 入力された材料を1つずつ確認
+                ingredient_found = False # 材料が見つかったかどうかのフラグ
+                for recipe_ingredient in recipe_ingredients: # レシピの材料を1つずつ確認
+                    if ingredient in recipe_ingredient: # 入力された材料がレシピの材料に含まれる場合
+                        ingredient_found = True # 材料が見つかったとする
+                        break
+                if not ingredient_found: # 1つでも材料が見つからなかった場合
+                    all_ingredients_found = False # 全ての材料が見つかったフラグをFalseにする
                     break
-            if not is_keyword_found:  # 材料キーワードが1つでも一致しなければ
-                is_all_ingredients_recipe = False
-                break
-        if is_all_ingredients_recipe:  # 全材料キーワードが一致した場合
-            missing_ingredients = []  # 足りない材料を格納するリスト
-            for miss_item in recipe['ingredients']:
-                miss_item = miss_item.lower().strip()
-                if miss_item not in ingredients:
-                    missing_ingredients.append(miss_item)
-            recipe['missing_ingredients'] = missing_ingredients  # レシピに足りない材料リストを追加
-            step_count = len(recipe['steps']) # 手順数を取得
-            filtered_ingredients.append((step_count,recipe))   # 手順数とレシピをタプルでリストに追加
-    if not filtered_ingredients:  # 検索結果が空の場合
-        return render_template('index.html', recipes=[], no_results=True)  # 空リストを渡すことでTypeErrorを防ぐ
-    filtered_ingredients = [recipe for step_count,recipe in filtered_ingredients] # 手順数を除いたレシピリストを作成
-    filtered_ingredients.sort(key = lambda recipe:len(recipe['steps']) )  # 手順数でソート
-    return render_template('index.html', recipes=filtered_ingredients)
+            if all_ingredients_found: # 全ての材料が見つかった場合
+                recipes_to_show.append(recipe) # 検索結果にレシピを追加
+        elif search_type == 'or': # OR検索の場合
+            or_found = False # 少なくとも1つの材料が見つかったかどうかのフラグ
+            for ingredient in ingredients: # 入力された材料を1つずつ確認
+                for recipe_ingredient in recipe_ingredients: # レシピの材料を1つずつ確認
+                    if ingredient in recipe_ingredient: # 入力された材料がレシピの材料に含まれる場合
+                        or_found = True
+                        break
+                if or_found:
+                    break 
+            if or_found:
+                recipes_to_show.append(recipe) # 検索結果にレシピを追加
+    recipes_dict = []  # レシピ情報を辞書形式で格納するリスト
+    for recipe in recipes_to_show:
+        recipes_dict.append({
+            'id': recipe.id,
+            'title': recipe.title,
+            'description': recipe.description,
+            'image_url': recipe.image_url,
+            'ingredients': recipe.ingredients,
+            'steps': recipe.steps,
+            'time_min': recipe.time_min
+        })
+    if not recipes_to_show:
+        return jsonify({"status": "error", "message": "検索結果が見つかりませんでした"})  # 「見つかりませんでした」表示
+    return jsonify({"status": "success", "data": recipes_dict, "count": len(recipes_dict)}) # 検索結果をJSON形式で返す
 
-def get_recipe(recipe_id):
-       get_recipe_id = (recipe_id - 1)
-       return recipes[get_recipe_id]
-@app.route('/recipe/<int:recipe_id>')  # /recipe/数字 にアクセスしたときの処理
-def show_recipe(recipe_id):
-    recipe = get_recipe(recipe_id)
-    return render_template('recipe_detail.html', recipe=recipe)  # recipe_detail.htmlテンプレートを描画し、レシピデータを渡す
+@app.route('/api/recipes/<int:recipe_id>', methods=['GET']) # /recipe/数字 にGETリクエストが来たときの処理
+def api_show_recipe(recipe_id): # レシピ詳細画面の表示処理, recipe_idはURLから取得した整数
+    recipe = Recipe.query.get(recipe_id) # 指定されたIDのレシピをデータベースから取得
+    if not recipe:  # レシピが見つからなかった場合
+        return jsonify({"status": "error", "message": "レシピが見つかりませんでした"})
+    recipe_dict = {
+        'id': recipe.id,
+        'title': recipe.title,
+        'description': recipe.description,
+        'image_url': recipe.image_url,
+        'ingredients': recipe.ingredients,
+        'steps': recipe.steps,
+        'time_min': recipe.time_min
+    }
+    return jsonify({"status": "success", "data": recipe_dict})  # レシピデータをJSON形式で返す
 
 @app.route('/admin/recipes/new',methods=['GET'])  # /admin/recipes/newにGETリクエストが来たときの処理
 def new_recipe():
@@ -110,51 +148,22 @@ def add_recipe():
         image_url = "#"  # 画像URLが空の場合はデフォルトのURLを設定
     ingredients = request.form.get('ingredients').splitlines()  # 改行で分割してリスト化
     steps = request.form.get('steps').splitlines()  # 改行で分割してリスト化
-    time_min = request.form.get('time_min')
-    new_id = 0
-    for number in recipes:
-        if number['id'] > new_id:
-            new_id = number['id']
-    new_id += 1
-
-    new_recipe = {
-        'id': new_id,
-        'title': title,
-        'description': description,
-        'image_url': image_url,
-        'ingredients': ingredients,
-        'steps': steps,
-        'time_min': time_min
-
-    }
-    recipes.append(new_recipe)  # 新しいレシピをリストに追加
-    with open('data/recipes.json' , 'w' ,) as f:
-        json.dump(recipes, f,ensure_ascii=False, indent=4)  # レシピリストをJSONファイルに保存
-    flash('新しいレシピが追加されました！')  # フラッシュメッセージを表示
+    time_min = request.form.get('time_min') # 分単位の調理時間
+    new_recipe = Recipe(  # Recipeモデルのインスタンスを作成
+        title=title,
+        description=description,
+        image_url=image_url,
+        ingredients=ingredients,
+        steps=steps,
+        time_min=time_min
+    )
+    db.session.add(new_recipe)  # 新しいレコードをセッションに追加
+    db.session.commit()  # セッションの変更をデータベースにコミット
+    flash('新しいレシピが追加されました！')  # フラッシュメッセージを設定
     return redirect('/')  # ホーム画面にリダイレクト
 
 if __name__ == "__main__":
     with app.app_context():  # アプリケーションコンテキストを作成
         db.create_all()  # データベースのテーブルを作成
-        if Recipe.query.first() is None:
-           recipe_file = 'data/recipes.json'
-           if os.path.exists(recipe_file):  # JSONファイルが存在する場合
-               with open(recipe_file, 'r', encoding='utf-8') as f:
-                   recipes = json.load(f)  # JSONファイルからレシピデータを読み込み
-                   for recipe_data in recipes:
-                       data = Recipe(
-                            id=recipe_data['id'],
-                            title=recipe_data['title'],
-                            description=recipe_data['description'],
-                            image_url=recipe_data.get('image_url', None),
-                            ingredients=recipe_data['ingredients'],
-                            steps=recipe_data['steps'],
-                            time_min=recipe_data.get('time_min', None)
-                       )
-                       db.session.add(data)
-                   db.session.commit()
-        recipes_count = Recipe.query.count()
-        print(f"データベースに保存されたレシピの数: {recipes_count}")
-
     app.run(debug=True)
 

@@ -1,53 +1,54 @@
-<!DOCTYPE html> <!-- HTML5の宣言。ブラウザにHTML5であることを伝える -->
-<html lang="en"> <!-- ページの言語を英語に設定 -->
-<head>
-    <meta charset="UTF-8"> <!-- 文字コードをUTF-8に設定。日本語も正しく表示される -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- レスポンシブ対応。スマホでも見やすくする -->
-    <title>レシピ検索</title> <!-- ブラウザのタブに表示されるタイトル -->
-</head>
-<body>
-    {% with messages = get_flashed_messages() %} <!-- フラッシュメッセージを取得 -->
-        {% if messages %} <!-- メッセージがある場合 -->
-            <ul class="flashes"> <!-- フラッシュメッセージ表示用のリスト -->
-                {% for message in messages %} <!-- メッセージを1件ずつループして表示 -->
-                    <li>{{ message }}</li> <!-- メッセージ内容を表示 -->
-                {% endfor %} <!-- ループ終了 -->
-            </ul>
-        {% endif %} <!-- if文終了 -->
-    {% endwith %} <!-- with文終了 -->
-    <h1>レシピ検索</h1> <!-- レシピ検索の見出し -->
-    <form action="/search" method="post"> <!-- レシピ名で検索するフォーム。/searchにPOST送信 -->
-        <input type="text" name="query" placeholder="レシピを検索"> <!-- 検索キーワード入力欄 -->
-        <button type="submit">検索</button> <!-- 検索ボタン -->
+<!DOCTYPE html>
+<!-- HTML5の宣言。ブラウザにHTML5であることを伝える -->
+<html lang="en">
+  <!-- ページの言語を英語に設定 -->
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 文字コードをUTF-8に設定。日本語も正しく表示される -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- レスポンシブ対応。スマホでも見やすくする -->
+    <title>レシピ検索</title>
+    <!-- ブラウザのタブに表示されるタイトル -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  </head>
+  <body>
+    <header class="site-header">
+  <h1 class="brand">
+    <img src="{{ url_for('static', filename='images/afro_logo.svg') }}" alt="Afro Logo" class="afro-logo">
+    <span class="brand-text">
+    Afro<br>Kitchen
+    </span>
+  </h1>
+</header>
+    <form id="search-name-form" class="search-form">
+      <input type="text" name="query" placeholder="レシピを検索" id="search-name-input" />
+      <button type="submit"><i class="fas fa-search"></i></button>
     </form>
-    <h1>材料検索</h1> <!-- 材料検索の見出し -->
-    <form action="/search_by_ingredients" method="POST"> <!-- 材料名で検索するフォーム。/search_by_ingredientsにPOST送信 -->
-        <input type="text" name="query" placeholder="材料を検索"> <!-- 材料キーワード入力欄 -->
-        <button type="submit">検索</button> <!-- 検索ボタン -->
-        </select>
+
+    <form id="search-ingredients-form" class="search-form">
+      <!-- 材料名で検索するフォーム。/search_by_ingredientsにPOST送信 -->
+      <input type="text" name="query" placeholder="材料を検索" id="search-ingredients-input" />
+      <!-- 材料キーワード入力欄 -->
+      <button type="submit"><i class="fas fa-search"></i></button>
+      <!-- 検索ボタン -->
+      <select name="search_type" id="search-type-select">
+      <option value="and">AND検索</option>
+      <option value="or">OR検索</option>
+      </select>
     </form>
-    <a href="/admin/recipes/new">新規レシピ作成</a> <!-- 新規レシピ作成ページへのリンク -->
-    <hr> <!-- 水平線。コンテンツの区切り -->
-    <div class="recipe-list"> <!-- レシピ一覧表示用のコンテナ -->
-        {% if recipes %} <!-- Python側からrecipesが渡されている場合（検索結果あり） -->
-            {% for recipe in recipes %} <!-- recipesを1件ずつループして表示 -->
-                <div class="recipe-item"> <!-- レシピ1件分の表示枠 -->
-                    <h3>
-                        <a href="{{ url_for('show_recipe', recipe_id=recipe.id) }}"> <!-- 詳細ページへのリンク。recipe.idをURLに渡す -->
-                            {{ recipe.title }} <!-- レシピタイトル表示 -->
-                        </a>
-                    </h3>
-                    <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}"> <!-- レシピ画像表示。altは画像が表示できない場合の代替テキスト -->
-                    <p>{{ recipe.description }}</p> <!-- レシピ説明文表示 -->
-                    <p>調理時間目安: {{ recipe.time_min}} 分</p>
-                    {% if recipe.missing_ingredients %} <!-- 足りない材料がある場合 -->
-                        <p>足りない材料: {{ recipe.missing_ingredients | join(', ') }}</p> <!-- 足りない材料をカンマ区切りで表示 -->
-                    {% endif %} <!-- if文終了 -->
-                </div>
-            {% endfor %} <!-- ループ終了 -->
-        {% elif no_results %} <!-- 検索結果がなかった場合 -->
-            <p>該当するレシピが見つかりませんでした。</p> <!-- 見つからなかった旨を表示 -->
-        {% endif %} <!-- if文終了 -->
-    </div>
-</body>
+    <a href="/admin/recipes/new">新規レシピ作成</a>
+    <!-- 新規レシピ作成ページへのリンク -->
+    <hr />
+      <select id="sort-select">
+        <option value="default">並び替え: デフォルト</option>
+        <option value="time_asc">並び替え: 調理時間が短い順</option>
+      </select>
+    <!-- 水平線。コンテンツの区切り -->
+    <div class="recipe-list" id="search-results-container"></div>
+    <script src="/static/js/main.js"></script>
+
+  </body>
 </html>
